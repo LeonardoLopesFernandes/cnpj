@@ -1,4 +1,4 @@
-package com.example.cnpj
+package io.cnpj.cnpj
 
 import io.flutter.embedding.android.FlutterActivity
 
