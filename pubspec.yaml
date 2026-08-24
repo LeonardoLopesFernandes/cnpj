@@ -1,0 +1,25 @@
+name: cnpj
+description: "Consulta CNPJ - Consulta de CNPJ gratuita"
+publish_to: 'none'
+version: 3.0.0+3
+
+environment:
+  sdk: ^3.10.4
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+  http: ^1.2.0
+  shared_preferences: ^2.3.0
+  share_plus: ^10.0.0
+  path_provider: ^2.1.0
+  pdf: ^3.11.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
