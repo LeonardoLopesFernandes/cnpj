@@ -88,10 +88,18 @@ class _SplashScreenState extends State<SplashScreen>
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Image.asset(
-                  'assets/icons/cnpj_logo.png',
-                  width: 120,
-                  height: 120,
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: const BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Color(0xFF0F1724),
+                    border: Border.all(color: Color(0xFF1A4C89), width: 2),
+                  ),
+                  child: Image.asset(
+                    'assets/icons/cnpj_logo.png',
+                    width: 120,
+                    height: 120,
+                  ),
                 ),
                 const SizedBox(height: 24),
                 const Text(

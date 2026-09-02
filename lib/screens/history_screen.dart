@@ -206,7 +206,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                                             Text(
                                               _formatCnpj(empresa.cnpj),
                                               style: const TextStyle(
-                                                color: _primary,
+                                                color: Color(0xFF2563EB),
                                                 fontSize: 13,
                                                 fontWeight: FontWeight.w500,
                                               ),

@@ -401,34 +401,25 @@ class DetailScreen extends StatelessWidget {
   }
 
   Widget _statusBadge(String? status) {
-    final cor = _statusColor(status);
-    final texto = _statusText(status);
-    if (texto.isEmpty) return const SizedBox.shrink();
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: cor.withAlpha(25),
-        borderRadius: BorderRadius.circular(6),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 8,
-            height: 8,
-            decoration: BoxDecoration(color: cor, shape: BoxShape.circle),
+    if (status == null) return const SizedBox.shrink();
+    final s = status.toLowerCase();
+    final isAtiva = s.contains('ativa');
+    final cor = isAtiva ? success : error;
+    final texto = isAtiva ? 'Ativa' : status;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(Icons.circle, size: 10, color: cor),
+        const SizedBox(width: 6),
+        Text(
+          texto,
+          style: TextStyle(
+            color: cor,
+            fontSize: 12,
+            fontWeight: FontWeight.bold,
           ),
-          const SizedBox(width: 6),
-          Text(
-            texto,
-            style: TextStyle(
-              color: cor,
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 

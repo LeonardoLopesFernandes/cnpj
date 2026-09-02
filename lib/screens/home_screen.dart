@@ -34,6 +34,8 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   final _resultKey = GlobalKey();
 
   bool _loading = false;
+  bool _sharing = false;
+  bool _generatingPdf = false;
   CnpjResponse? _result;
   String? _errorMessage;
   bool _isFavorite = false;
@@ -179,7 +181,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
 
   Future<void> _shareImage() async {
     if (_result == null) return;
-    _showSnack('Gerando imagem...');
+    setState(() { _sharing = true; });
     try {
       final bytes = await _renderShareImage(_result!);
       if (!mounted) return;
@@ -193,12 +195,14 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     } catch (e) {
       if (!mounted) return;
       _showSnack('Erro ao gerar imagem. Tente novamente.');
+    } finally {
+      if (mounted) setState(() { _sharing = false; });
     }
   }
 
   Future<void> _generatePdf() async {
     if (_result == null) return;
-    _showSnack('Gerando PDF...');
+    setState(() { _generatingPdf = true; });
     try {
       final data = _result!;
 
@@ -248,6 +252,8 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     } catch (e) {
       if (!mounted) return;
       _showSnack('Erro ao gerar PDF. Tente novamente.');
+    } finally {
+      if (mounted) setState(() { _generatingPdf = false; });
     }
   }
 
@@ -1770,10 +1776,20 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                     borderRadius: BorderRadius.circular(12)),
                 elevation: 0,
               ),
-              onPressed: _shareImage,
-              icon: const Icon(Icons.share, size: 18),
-              label: const Text('COMPARTILHAR IMAGEM',
-                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+              onPressed: _sharing ? null : _shareImage,
+              icon: _sharing
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Icon(Icons.share, size: 18),
+              label: Text(
+                  _sharing ? 'COMPARTILHANDO...' : 'COMPARTILHAR IMAGEM',
+                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
             ),
           ),
           const SizedBox(height: 10),
@@ -1788,10 +1804,20 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                     borderRadius: BorderRadius.circular(12)),
                 elevation: 0,
               ),
-              onPressed: _generatePdf,
-              icon: const Icon(Icons.picture_as_pdf, size: 18),
-              label: const Text('GERAR PDF',
-                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+              onPressed: _generatingPdf ? null : _generatePdf,
+              icon: _generatingPdf
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Icon(Icons.picture_as_pdf, size: 18),
+              label: Text(
+                  _generatingPdf ? 'GERANDO PDF...' : 'GERAR PDF',
+                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
             ),
           ),
           const SizedBox(height: 10),
