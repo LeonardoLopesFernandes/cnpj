@@ -1,5 +1,3 @@
-import java.util.Properties
-
 plugins {
     id("com.android.application")
     id("kotlin-android")
@@ -17,17 +15,8 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
-    kotlin {
-        compilerOptions {
-            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
-        }
-    }
-
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
         applicationId = "io.cnpj.cnpj"
-        // You can update the following values to match your application needs.
-        // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
@@ -36,16 +25,10 @@ android {
 
     signingConfigs {
         create("release") {
-            val props = java.util.Properties()
-            val propFile = rootProject.file("key.properties")
-            if (propFile.exists()) {
-                propFile.inputStream().use { props.load(it) }
-            }
-            keyAlias = props.getProperty("keyAlias") ?: "minhaloja"
-            keyPassword = props.getProperty("keyPassword") ?: "minhaloja123"
-            storeFile = props.getProperty("storeFile")?.let { f: String -> rootProject.file(f) }
-                ?: rootProject.file("app/release-key.jks")
-            storePassword = props.getProperty("storePassword") ?: "minhaloja123"
+            keyAlias = "minhaloja"
+            keyPassword = "minhaloja123"
+            storeFile = rootProject.file("app/release-key.jks")
+            storePassword = "minhaloja123"
         }
     }
 
