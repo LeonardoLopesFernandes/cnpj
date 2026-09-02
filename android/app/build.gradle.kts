@@ -15,8 +15,10 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
-    kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_17.toString()
+    kotlin {
+        compilerOptions {
+            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+        }
     }
 
     defaultConfig {
@@ -32,14 +34,14 @@ android {
 
     signingConfigs {
         create("release") {
-            val props = Properties()
+            val props = java.util.Properties()
             val propFile = rootProject.file("key.properties")
             if (propFile.exists()) {
                 propFile.inputStream().use { props.load(it) }
             }
             keyAlias = props.getProperty("keyAlias") ?: "minhaloja"
             keyPassword = props.getProperty("keyPassword") ?: "minhaloja123"
-            storeFile = props.getProperty("storeFile")?.let { f -> rootProject.file(f) }
+            storeFile = props.getProperty("storeFile")?.let { f: String -> rootProject.file(f) }
                 ?: rootProject.file("app/release-key.jks")
             storePassword = props.getProperty("storePassword") ?: "minhaloja123"
         }
