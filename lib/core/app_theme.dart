@@ -150,7 +150,7 @@ class AppTheme {
   );
 
   // ─── Card Theme ─────────────────────────────────────────
-  static const CardTheme _cardTheme = CardTheme(
+  static const CardThemeData _cardTheme = CardThemeData(
     color: card,
     elevation: 2,
     shadowColor: Colors.black54,
@@ -309,7 +309,7 @@ class AppTheme {
         ),
         behavior: SnackBarBehavior.floating,
       ),
-      dialogTheme: DialogTheme(
+      dialogTheme: DialogThemeData(
         backgroundColor: card,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.all(Radius.circular(20)),
@@ -335,7 +335,7 @@ class AppTheme {
           borderRadius: BorderRadius.all(Radius.circular(8)),
         ),
       ),
-      tabBarTheme: TabBarTheme(
+      tabBarTheme: TabBarThemeData(
         labelColor: accent,
         unselectedLabelColor: textSecondary,
         indicatorColor: accent,

@@ -49,7 +49,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('CNPJ $_cnpj copiado!'),
+          content: Text('CNPJ $cnpj copiado!'),
           backgroundColor: _primary,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),

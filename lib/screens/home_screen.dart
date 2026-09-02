@@ -52,7 +52,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   }
 
   Future<void> _loadRecentHistory() async {
-    final history = await _storage.getHistory();
+    final history = await _storage.loadHistory();
     if (mounted) {
       setState(() {
         _recentHistory = history.take(5).toList();
@@ -1125,7 +1125,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                               ),
                             )
                           : const Icon(Icons.search, size: 18),
-                      child: const Text('CONSULTAR',
+                      label: const Text('CONSULTAR',
                           style: TextStyle(
                               fontWeight: FontWeight.w600, fontSize: 14)),
                     ),
