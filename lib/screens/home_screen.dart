@@ -15,6 +15,10 @@ import 'detail_screen.dart';
 import 'favorites_screen.dart';
 import 'history_screen.dart';
 
+extension BuildContextTheme on BuildContext {
+  ThemeData get theme => Theme.of(this);
+}
+
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -22,7 +26,7 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMixin {
   final _cnpjController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
   final _apiService = CnpjApiService();
@@ -33,11 +37,27 @@ class _HomeScreenState extends State<HomeScreen> {
   CnpjResponse? _result;
   String? _errorMessage;
   bool _isFavorite = false;
+  List<Empresa> _recentHistory = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadRecentHistory();
+  }
 
   @override
   void dispose() {
     _cnpjController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadRecentHistory() async {
+    final history = await _storage.getHistory();
+    if (mounted) {
+      setState(() {
+        _recentHistory = history.take(5).toList();
+      });
+    }
   }
 
   void _onCnpjChange(String value) {
@@ -89,6 +109,7 @@ class _HomeScreenState extends State<HomeScreen> {
       );
       await _storage.addToHistory(empresa);
       _checkFavorite();
+      _loadRecentHistory();
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -125,8 +146,35 @@ class _HomeScreenState extends State<HomeScreen> {
   void _showSnack(String msg) {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(msg), backgroundColor: const Color(0xFFEF4444)),
+      SnackBar(
+        content: Text(msg),
+        backgroundColor: const Color(0xFF1E3A5F),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ),
     );
+  }
+
+  void _copyCnpj() {
+    final cnpj = _cnpjFormat(_result?.estabelecimento?.cnpj);
+    if (cnpj.isEmpty) return;
+    Clipboard.setData(ClipboardData(text: cnpj));
+    _showSnack('CNPJ copiado!');
+  }
+
+  String _getGreeting() {
+    final hour = DateTime.now().hour;
+    if (hour >= 5 && hour < 12) return 'Bom dia';
+    if (hour >= 12 && hour < 18) return 'Boa tarde';
+    return 'Boa noite';
+  }
+
+  void _clearSearch() {
+    _cnpjController.clear();
+    setState(() {
+      _result = null;
+      _errorMessage = null;
+    });
   }
 
   Future<void> _shareImage() async {
@@ -514,6 +562,15 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = context.theme;
+    final cardColor = theme.cardColor;
+    final surfaceColor = theme.scaffoldBackgroundColor;
+    final borderColor = theme.dividerColor;
+    final textPrimary = theme.textTheme.bodyLarge?.color ?? const Color(0xFFE2E8F0);
+    final textSecondary = theme.textTheme.bodySmall?.color ?? const Color(0xFF94A3B8);
+    final primaryBlue = theme.primaryColor;
+    final accentBlue = theme.colorScheme.secondary;
+
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, _) async {
@@ -524,80 +581,301 @@ class _HomeScreenState extends State<HomeScreen> {
         }
       },
       child: Scaffold(
-      backgroundColor: const Color(0xFF0d1117),
-      appBar: AppBar(
-        title: const Text(
-          'Consulta CNPJ',
-          style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
-        ),
-        backgroundColor: const Color(0xFF161b22),
-        foregroundColor: const Color(0xFFe6edf3),
-        elevation: 0,
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(0),
-          child: Container(
-            height: 1,
-            color: const Color(0xFF30363d),
+        backgroundColor: surfaceColor,
+        appBar: AppBar(
+          title: const Text(
+            'Consulta CNPJ',
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+          ),
+          backgroundColor: cardColor,
+          foregroundColor: textPrimary,
+          elevation: 0,
+          bottom: PreferredSize(
+            preferredSize: const Size.fromHeight(0),
+            child: Container(
+              height: 1,
+              color: borderColor,
+            ),
+          ),
+          leading: Builder(
+            builder: (ctx) => IconButton(
+              icon: Icon(Icons.menu, color: textPrimary),
+              onPressed: () => Scaffold.of(ctx).openDrawer(),
+            ),
           ),
         ),
-        leading: Builder(
-          builder: (ctx) => IconButton(
-            icon: const Icon(Icons.menu, color: Color(0xFFe6edf3)),
-            onPressed: () => Scaffold.of(ctx).openDrawer(),
+        drawer: _buildDrawer(),
+        body: SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            children: [
+              if (_result == null && !_loading && _errorMessage == null)
+                _buildWelcomeSection(),
+              _buildSearchCard(),
+              const SizedBox(height: 16),
+              if (_result == null && !_loading && _errorMessage == null && _recentHistory.isNotEmpty)
+                _buildRecentSearches(),
+              if (_loading)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 40),
+                  child: CircularProgressIndicator(),
+                ),
+              if (_errorMessage != null)
+                _buildErrorCard(),
+              if (_result == null && !_loading && _errorMessage != null)
+                _buildEmptyState(),
+              if (_result != null && !_loading)
+                RepaintBoundary(
+                  key: _resultKey,
+                  child: _buildResultCard(),
+                ),
+            ],
           ),
         ),
       ),
-      drawer: _buildDrawer(),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            _buildSearchCard(),
-            const SizedBox(height: 16),
-            if (_loading)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 40),
-                child: CircularProgressIndicator(color: Color(0xFF2f81f7)),
-              ),
-            if (_errorMessage != null)
-              _buildErrorCard(),
-            if (_result != null && !_loading)
-              RepaintBoundary(
-                key: _resultKey,
-                child: _buildResultCard(),
-              ),
+    );
+  }
+
+  Widget _buildWelcomeSection() {
+    final theme = context.theme;
+    final textPrimary = theme.textTheme.bodyLarge?.color ?? const Color(0xFFE2E8F0);
+    final textSecondary = theme.textTheme.bodySmall?.color ?? const Color(0xFF94A3B8);
+    final primaryBlue = theme.primaryColor;
+
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            primaryBlue.withOpacity(0.15),
+            primaryBlue.withOpacity(0.05),
           ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
         ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: primaryBlue.withOpacity(0.2)),
       ),
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: primaryBlue.withOpacity(0.15),
+              shape: BoxShape.circle,
+            ),
+            child: Image.asset(
+              'assets/icons/cnpj_logo.png',
+              width: 48,
+              height: 48,
+              errorBuilder: (_, __, ___) => Icon(
+                Icons.business,
+                size: 48,
+                color: primaryBlue,
+              ),
+            ),
+          ),
+          const SizedBox(height: 14),
+          Text(
+            _getGreeting(),
+            style: TextStyle(
+              color: textSecondary,
+              fontSize: 14,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Consulta CNPJ',
+            style: TextStyle(
+              color: textPrimary,
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Consulte informações de empresas pelo CNPJ',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: textSecondary,
+              fontSize: 13,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRecentSearches() {
+    final theme = context.theme;
+    final cardColor = theme.cardColor;
+    final borderColor = theme.dividerColor;
+    final textPrimary = theme.textTheme.bodyLarge?.color ?? const Color(0xFFE2E8F0);
+    final textSecondary = theme.textTheme.bodySmall?.color ?? const Color(0xFF94A3B8);
+    final primaryBlue = theme.primaryColor;
+
+    if (_recentHistory.isEmpty) return const SizedBox.shrink();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: 4, bottom: 10),
+          child: Text(
+            'Buscas recentes',
+            style: TextStyle(
+              color: textSecondary,
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+        SizedBox(
+          height: 40,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemCount: _recentHistory.length,
+            separatorBuilder: (_, __) => const SizedBox(width: 8),
+            itemBuilder: (context, index) {
+              final empresa = _recentHistory[index];
+              final cnpj = empresa.cnpj ?? '';
+              final display = cnpj.length == 14 ? _cnpjFormat(cnpj) : cnpj;
+              return ActionChip(
+                label: Text(
+                  empresa.razaoSocial?.isNotEmpty == true
+                      ? empresa.razaoSocial!
+                      : display,
+                  style: TextStyle(
+                    color: textPrimary,
+                    fontSize: 12,
+                  ),
+                ),
+                avatar: Icon(Icons.history, size: 16, color: primaryBlue),
+                backgroundColor: cardColor,
+                side: BorderSide(color: borderColor),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                onPressed: () {
+                  _cnpjController.text = _formatCnpjForInput(cnpj);
+                  _consultar();
+                },
+              );
+            },
+          ),
+        ),
+        const SizedBox(height: 16),
+      ],
+    );
+  }
+
+  Widget _buildEmptyState() {
+    final theme = context.theme;
+    final cardColor = theme.cardColor;
+    final borderColor = theme.dividerColor;
+    final textPrimary = theme.textTheme.bodyLarge?.color ?? const Color(0xFFE2E8F0);
+    final textSecondary = theme.textTheme.bodySmall?.color ?? const Color(0xFF94A3B8);
+    final primaryBlue = theme.primaryColor;
+
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(32),
+      decoration: BoxDecoration(
+        color: cardColor,
+        border: Border.all(color: borderColor),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: primaryBlue.withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.search_off_rounded,
+              size: 48,
+              color: primaryBlue,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Consulta não encontrada',
+            style: TextStyle(
+              color: textPrimary,
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Verifique o CNPJ e tente novamente',
+            style: TextStyle(
+              color: textSecondary,
+              fontSize: 13,
+            ),
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildDrawer() {
+    final theme = context.theme;
+    final cardColor = theme.cardColor;
+    final borderColor = theme.dividerColor;
+    final textPrimary = theme.textTheme.bodyLarge?.color ?? const Color(0xFFE2E8F0);
+    final textSecondary = theme.textTheme.bodySmall?.color ?? const Color(0xFF94A3B8);
+    final primaryBlue = theme.primaryColor;
+
     return Drawer(
-      backgroundColor: const Color(0xFF161b22),
+      backgroundColor: cardColor,
       child: Column(
         children: [
           Container(
-            decoration: const BoxDecoration(
-              border: Border(
-                bottom: BorderSide(color: Color(0xFF30363d)),
-              ),
+            decoration: BoxDecoration(
+              border: Border(bottom: BorderSide(color: borderColor)),
             ),
             child: UserAccountsDrawerHeader(
-              decoration: const BoxDecoration(color: Color(0xFF161b22)),
-              accountName: const Text(
+              decoration: BoxDecoration(color: cardColor),
+              accountName: Text(
                 'Consulta CNPJ',
                 style: TextStyle(
-                    color: Color(0xFFe6edf3), fontWeight: FontWeight.w600),
+                    color: textPrimary, fontWeight: FontWeight.w600),
               ),
-              accountEmail: const Text(
+              accountEmail: Text(
                 'Versão 3.0',
-                style: TextStyle(color: Color(0xFF8b949e), fontSize: 13),
+                style: TextStyle(color: textSecondary, fontSize: 13),
               ),
-              currentAccountPicture: CircleAvatar(
-                backgroundColor: const Color(0xFF21262d),
-                child: Icon(Icons.business, color: Colors.grey[400], size: 28),
+              currentAccountPicture: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      primaryBlue.withOpacity(0.3),
+                      primaryBlue.withOpacity(0.1),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  shape: BoxShape.circle,
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(4),
+                  child: Image.asset(
+                    'assets/icons/cnpj_logo.png',
+                    width: 64,
+                    height: 64,
+                    errorBuilder: (_, __, ___) => Icon(
+                      Icons.business,
+                      size: 28,
+                      color: textPrimary,
+                    ),
+                  ),
+                ),
               ),
             ),
           ),
@@ -651,35 +929,106 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _drawerItem(IconData icon, String title, VoidCallback onTap) {
+    final theme = context.theme;
+    final textPrimary = theme.textTheme.bodyLarge?.color ?? const Color(0xFFE2E8F0);
+    final textSecondary = theme.textTheme.bodySmall?.color ?? const Color(0xFF94A3B8);
+
     return ListTile(
-      leading: Icon(icon, color: const Color(0xFF8b949e)),
+      leading: Icon(icon, color: textSecondary),
       title: Text(title,
-          style: const TextStyle(color: Color(0xFFe6edf3), fontSize: 15)),
+          style: TextStyle(color: textPrimary, fontSize: 15)),
       onTap: onTap,
     );
   }
 
   Future<bool> _showExitDialog() {
+    final theme = context.theme;
+    final cardColor = theme.cardColor;
+    final textPrimary = theme.textTheme.bodyLarge?.color ?? const Color(0xFFE2E8F0);
+    final textSecondary = theme.textTheme.bodySmall?.color ?? const Color(0xFF94A3B8);
+    final primaryBlue = theme.primaryColor;
+
     return showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF161b22),
-        title: const Text('Sair',
-            style: TextStyle(color: Color(0xFFe6edf3), fontSize: 16)),
-        content: const Text(
-          'Deseja realmente sair?',
-          style: TextStyle(color: Color(0xFF8b949e), fontSize: 14),
+        backgroundColor: cardColor,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        contentPadding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: primaryBlue.withOpacity(0.15),
+                shape: BoxShape.circle,
+              ),
+              child: Image.asset(
+                'assets/icons/cnpj_logo.png',
+                width: 40,
+                height: 40,
+                errorBuilder: (_, __, ___) => Icon(
+                  Icons.business,
+                  size: 40,
+                  color: primaryBlue,
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Deseja sair do app?',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: textPrimary,
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'Você tem certeza que deseja encerrar o aplicativo?',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: textSecondary,
+                fontSize: 13,
+              ),
+            ),
+            const SizedBox(height: 20),
+          ],
         ),
+        actionsPadding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancelar',
-                style: TextStyle(color: Color(0xFF8b949e))),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: textPrimary,
+                side: BorderSide(color: theme.dividerColor),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                padding: const EdgeInsets.symmetric(vertical: 12),
+              ),
+              child: const Text('Cancelar', style: TextStyle(fontSize: 14)),
+            ),
           ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Sair',
-                style: TextStyle(color: Color(0xFFf85149))),
+          const SizedBox(height: 8),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFEF4444),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                elevation: 0,
+              ),
+              child: const Text('Sair', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+            ),
           ),
         ],
       ),
@@ -687,13 +1036,21 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildSearchCard() {
+    final theme = context.theme;
+    final cardColor = theme.cardColor;
+    final borderColor = theme.dividerColor;
+    final textPrimary = theme.textTheme.bodyLarge?.color ?? const Color(0xFFE2E8F0);
+    final textSecondary = theme.textTheme.bodySmall?.color ?? const Color(0xFF94A3B8);
+    final primaryBlue = theme.primaryColor;
+    final accentBlue = theme.colorScheme.secondary;
+
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFF161b22),
-        border: Border.all(color: const Color(0xFF30363d)),
+        color: cardColor,
+        border: Border.all(color: borderColor),
         borderRadius: BorderRadius.circular(16),
         boxShadow: const [
-          BoxShadow(color: Colors.black38, blurRadius: 12, offset: Offset(0, 4)),
+          BoxShadow(color: Colors.black26, blurRadius: 12, offset: Offset(0, 4)),
         ],
       ),
       padding: const EdgeInsets.all(16),
@@ -703,36 +1060,42 @@ class _HomeScreenState extends State<HomeScreen> {
           children: [
             TextFormField(
               controller: _cnpjController,
-              style: const TextStyle(
-                  color: Color(0xFFe6edf3), fontSize: 16, fontWeight: FontWeight.w500),
+              style: TextStyle(
+                  color: textPrimary, fontSize: 16, fontWeight: FontWeight.w500),
               keyboardType: TextInputType.number,
               maxLength: 18,
               decoration: InputDecoration(
                 counterText: '',
                 hintText: '00.000.000/0000-00',
-                hintStyle: const TextStyle(
-                    color: Color(0xFF484f58), fontSize: 16, fontWeight: FontWeight.w500),
+                hintStyle: TextStyle(
+                    color: textSecondary.withOpacity(0.6), fontSize: 16, fontWeight: FontWeight.w500),
                 filled: true,
-                fillColor: const Color(0xFF21262d),
+                fillColor: theme.inputDecorationTheme.fillColor ?? borderColor.withOpacity(0.3),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Color(0xFF30363d)),
+                  borderSide: BorderSide(color: borderColor),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Color(0xFF30363d)),
+                  borderSide: BorderSide(color: borderColor),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Color(0xFF2f81f7), width: 1.5),
+                  borderSide: BorderSide(color: primaryBlue, width: 1.5),
                 ),
                 contentPadding: const EdgeInsets.symmetric(
                     horizontal: 14, vertical: 14),
-                prefixIcon: const Padding(
-                  padding: EdgeInsets.only(left: 14, right: 8),
+                prefixIcon: Padding(
+                  padding: const EdgeInsets.only(left: 14, right: 8),
                   child: Icon(Icons.search,
-                      color: Color(0xFF8b949e), size: 20),
+                      color: textSecondary, size: 20),
                 ),
+                suffixIcon: _cnpjController.text.isNotEmpty
+                    ? IconButton(
+                        icon: Icon(Icons.close, color: textSecondary, size: 20),
+                        onPressed: _clearSearch,
+                      )
+                    : null,
               ),
               onChanged: _onCnpjChange,
               onFieldSubmitted: (_) => _consultar(),
@@ -742,16 +1105,26 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
                 Expanded(
                   child: SizedBox(
-                    height: 44,
-                    child: ElevatedButton(
+                    height: 48,
+                    child: ElevatedButton.icon(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF238636),
+                        backgroundColor: primaryBlue,
                         foregroundColor: Colors.white,
                         shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10)),
+                            borderRadius: BorderRadius.circular(12)),
                         elevation: 0,
                       ),
                       onPressed: _loading ? null : _consultar,
+                      icon: _loading
+                          ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : const Icon(Icons.search, size: 18),
                       child: const Text('CONSULTAR',
                           style: TextStyle(
                               fontWeight: FontWeight.w600, fontSize: 14)),
@@ -759,34 +1132,32 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
                 const SizedBox(width: 10),
-                Expanded(
-                  child: SizedBox(
-                    height: 44,
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF21262d),
-                        foregroundColor: const Color(0xFFc9d1d9),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10)),
-                        side: const BorderSide(color: Color(0xFF30363d)),
-                        elevation: 0,
-                      ),
-                      onPressed: () async {
-                        final result = await Navigator.push<String>(
-                          context,
-                          MaterialPageRoute(
-                              builder: (_) => const HistoryScreen()),
-                        );
-                        if (result != null) {
-                          _cnpjController.text =
-                              _formatCnpjForInput(result);
-                          _consultar();
-                        }
-                      },
-                      child: const Text('HISTÓRICO',
-                          style: TextStyle(
-                              fontWeight: FontWeight.w600, fontSize: 14)),
+                SizedBox(
+                  height: 48,
+                  width: 48,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: cardColor,
+                      foregroundColor: textPrimary,
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
+                      side: BorderSide(color: borderColor),
+                      elevation: 0,
+                      padding: EdgeInsets.zero,
                     ),
+                    onPressed: () async {
+                      final result = await Navigator.push<String>(
+                        context,
+                        MaterialPageRoute(
+                            builder: (_) => const HistoryScreen()),
+                      );
+                      if (result != null) {
+                        _cnpjController.text =
+                            _formatCnpjForInput(result);
+                        _consultar();
+                      }
+                    },
+                    child: Icon(Icons.history, color: textSecondary, size: 22),
                   ),
                 ),
               ],
@@ -798,22 +1169,27 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildErrorCard() {
+    final theme = context.theme;
+    final cardColor = theme.cardColor;
+    final borderColor = theme.dividerColor;
+    final textPrimary = theme.textTheme.bodyLarge?.color ?? const Color(0xFFE2E8F0);
+
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFF161b22),
-        border: Border.all(color: const Color(0xFF30363d)),
+        color: cardColor,
+        border: Border.all(color: borderColor),
         borderRadius: BorderRadius.circular(16),
       ),
       padding: const EdgeInsets.all(18),
       child: Row(
         children: [
           const Icon(Icons.error_outline,
-              color: Color(0xFFf85149), size: 24),
+              color: Color(0xFFEF4444), size: 24),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
               _errorMessage!,
-              style: const TextStyle(color: Color(0xFFe6edf3), fontSize: 13),
+              style: TextStyle(color: textPrimary, fontSize: 13),
             ),
           ),
         ],
@@ -823,6 +1199,13 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildResultCard() {
     final est = _result!.estabelecimento;
+    final theme = context.theme;
+    final cardColor = theme.cardColor;
+    final borderColor = theme.dividerColor;
+    final textPrimary = theme.textTheme.bodyLarge?.color ?? const Color(0xFFE2E8F0);
+    final textSecondary = theme.textTheme.bodySmall?.color ?? const Color(0xFF94A3B8);
+    final primaryBlue = theme.primaryColor;
+
     return TweenAnimationBuilder<double>(
       tween: Tween(begin: 0.0, end: 1.0),
       duration: const Duration(milliseconds: 400),
@@ -837,147 +1220,234 @@ class _HomeScreenState extends State<HomeScreen> {
         );
       },
       child: Column(
-      children: [
-        _buildCompanyHeader(),
-        const SizedBox(height: 12),
-        _dataCard(Icons.info_outline, 'Informações da Empresa', [
-          _dataItem('Nome Fantasia', est?.nomeFantasia),
-          _divider(),
-          _dataItem('Porte', _result!.porte?.descricao),
-          _divider(),
-          _dataItem('Capital Social', _result!.capitalSocial),
-          _divider(),
-          _dataItem('Natureza Jurídica', _result!.naturezaJuridica?.descricao),
-          _divider(),
-          _dataItem('Atividade Principal', est?.atividadePrincipal?.descricao),
-          _divider(),
-          _dataItem('Data Abertura', est?.dataInicioAtividade),
-          _divider(),
-          _dataItem('Situação Cadastral', est?.situacaoCadastral,
-              trailing: _statusBadge(est?.situacaoCadastral)),
-          if (_result!.qualificacaoResponsavel?.descricao != null) ...[
+        children: [
+          _buildCompanyHeader(),
+          const SizedBox(height: 12),
+          _buildCopyCnpjButton(),
+          const SizedBox(height: 12),
+          _dataCard(Icons.info_outline, 'Informações da Empresa', [
+            _dataItem('Nome Fantasia', est?.nomeFantasia),
             _divider(),
-            _dataItem('Qualificação Resp.',
-                _result!.qualificacaoResponsavel?.descricao),
-          ],
-        ]),
-        const SizedBox(height: 12),
-        _dataCard(Icons.location_on_outlined, 'Localização', [
-          _dataItem('Endereço',
-              '${est?.tipoLogradouro ?? ''} ${est?.logradouro ?? ''}, ${est?.numero ?? ''}${est?.complemento != null ? ' - ${est?.complemento}' : ''}'),
-          _divider(),
-          _dataItem('Bairro', est?.bairro),
-          _divider(),
-          _dataItem('CEP', est?.cep),
-          _divider(),
-          _dataItem('Cidade/UF',
-              '${est?.cidade?.nome ?? ''}/${est?.estado?.sigla ?? ''}'),
-          _divider(),
-          _dataItem('País', est?.pais?.nome),
-        ]),
-        const SizedBox(height: 12),
-        _dataCard(Icons.phone_outlined, 'Contato', [
-          _dataItem('E-mail', est?.email),
-          _divider(),
-          _dataItem('Telefone',
-              formatTelefone(est?.ddd1, est?.telefone1)),
-          if (est?.ddd2 != null) ...[
+            _dataItem('Porte', _result!.porte?.descricao),
             _divider(),
-            _dataItem('Telefone 2',
-                formatTelefone(est?.ddd2, est?.telefone2)),
-          ],
-        ]),
-        if (_result!.socios != null && _result!.socios!.isNotEmpty) ...[
-          const SizedBox(height: 12),
-          _dataCard(Icons.people_outline, 'Sócios (${_result!.socios!.length})',
-              _result!.socios!.map((s) {
-            return _dataItem(s.nome ?? '-',
-                s.qualificacaoSocio?.descricao ?? s.tipo);
-          }).toList()),
-        ],
-        if (est?.atividadesSecundarias != null &&
-            est!.atividadesSecundarias!.isNotEmpty) ...[
-          const SizedBox(height: 12),
-          _dataCard(
-            Icons.work_outline,
-            'Atividades Secundárias',
-            est.atividadesSecundarias!
-                .take(3)
-                .map((a) => Padding(
-                      padding: const EdgeInsets.only(bottom: 4),
-                      child: Text(a.descricao ?? '-',
-                          style: const TextStyle(
-                              color: Color(0xFFe6edf3), fontSize: 13)),
-                    ))
-                .toList(),
-          ),
-        ],
-        if (est?.inscricoesEstaduais != null &&
-            est!.inscricoesEstaduais!.isNotEmpty) ...[
-          const SizedBox(height: 12),
-          _buildInscricaoEstadualCard(est.inscricoesEstaduais!),
-        ],
-        if (_result!.simples != null) ...[
-          const SizedBox(height: 12),
-          _dataCard(Icons.receipt_outlined, 'Simples Nacional / MEI', [
-            _dataItem('Simples Nacional',
-                _result!.isSimples ? 'Sim' : 'Não'),
-            if (_result!.isSimples)
-              _dataItem('Data Opção', _result!.simples!.dataOpcaoSimples),
-            if (!_result!.isSimples &&
-                _result!.simples!.dataExclusaoSimples != null)
-              _dataItem('Data Exclusão', _result!.simples!.dataExclusaoSimples),
+            _dataItem('Capital Social', _result!.capitalSocial),
             _divider(),
-            _dataItem('MEI', _result!.isMei ? 'Sim' : 'Não'),
-            if (_result!.isMei)
-              _dataItem('Data Opção MEI', _result!.simples!.dataOpcaoMei),
-            if (!_result!.isMei &&
-                _result!.simples!.dataExclusaoMei != null)
-              _dataItem('Data Exclusão MEI', _result!.simples!.dataExclusaoMei),
+            _dataItem('Natureza Jurídica', _result!.naturezaJuridica?.descricao),
+            _divider(),
+            _dataItem('Atividade Principal', est?.atividadePrincipal?.descricao),
+            _divider(),
+            _dataItem('Data Abertura', est?.dataInicioAtividade),
+            _divider(),
+            _dataItem('Situação Cadastral', est?.situacaoCadastral,
+                trailing: _statusBadge(est?.situacaoCadastral)),
+            if (_result!.qualificacaoResponsavel?.descricao != null) ...[
+              _divider(),
+              _dataItem('Qualificação Resp.',
+                  _result!.qualificacaoResponsavel?.descricao),
+            ],
           ]),
+          const SizedBox(height: 12),
+          _dataCard(Icons.location_on_outlined, 'Localização', [
+            _dataItem('Endereço',
+                '${est?.tipoLogradouro ?? ''} ${est?.logradouro ?? ''}, ${est?.numero ?? ''}${est?.complemento != null ? ' - ${est?.complemento}' : ''}'),
+            _divider(),
+            _dataItem('Bairro', est?.bairro),
+            _divider(),
+            _dataItem('CEP', est?.cep),
+            _divider(),
+            _dataItem('Cidade/UF',
+                '${est?.cidade?.nome ?? ''}/${est?.estado?.sigla ?? ''}'),
+            _divider(),
+            _dataItem('País', est?.pais?.nome),
+          ]),
+          const SizedBox(height: 12),
+          _dataCard(Icons.phone_outlined, 'Contato', [
+            _dataItem('E-mail', est?.email),
+            _divider(),
+            _dataItem('Telefone',
+                formatTelefone(est?.ddd1, est?.telefone1)),
+            if (est?.ddd2 != null) ...[
+              _divider(),
+              _dataItem('Telefone 2',
+                  formatTelefone(est?.ddd2, est?.telefone2)),
+            ],
+          ]),
+          if (_result!.socios != null && _result!.socios!.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            _dataCard(Icons.people_outline, 'Sócios (${_result!.socios!.length})',
+                _result!.socios!.map((s) {
+              return _dataItem(s.nome ?? '-',
+                  s.qualificacaoSocio?.descricao ?? s.tipo);
+            }).toList()),
+          ],
+          if (est?.atividadesSecundarias != null &&
+              est!.atividadesSecundarias!.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            _dataCard(
+              Icons.work_outline,
+              'Atividades Secundárias',
+              est.atividadesSecundarias!
+                  .take(3)
+                  .map((a) => Padding(
+                        padding: const EdgeInsets.only(bottom: 4),
+                        child: Text(a.descricao ?? '-',
+                            style: TextStyle(
+                                color: textPrimary, fontSize: 13)),
+                      ))
+                  .toList(),
+            ),
+          ],
+          if (est?.inscricoesEstaduais != null &&
+              est!.inscricoesEstaduais!.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            _buildInscricaoEstadualCard(est.inscricoesEstaduais!),
+          ],
+          if (_result!.simples != null) ...[
+            const SizedBox(height: 12),
+            _dataCard(Icons.receipt_outlined, 'Simples Nacional / MEI', [
+              _dataItem('Simples Nacional',
+                  _result!.isSimples ? 'Sim' : 'Não'),
+              if (_result!.isSimples)
+                _dataItem('Data Opção', _result!.simples!.dataOpcaoSimples),
+              if (!_result!.isSimples &&
+                  _result!.simples!.dataExclusaoSimples != null)
+                _dataItem('Data Exclusão', _result!.simples!.dataExclusaoSimples),
+              _divider(),
+              _dataItem('MEI', _result!.isMei ? 'Sim' : 'Não'),
+              if (_result!.isMei)
+                _dataItem('Data Opção MEI', _result!.simples!.dataOpcaoMei),
+              if (!_result!.isMei &&
+                  _result!.simples!.dataExclusaoMei != null)
+                _dataItem('Data Exclusão MEI', _result!.simples!.dataExclusaoMei),
+            ]),
+          ],
+          const SizedBox(height: 16),
+          _buildActionButtons(),
+          const SizedBox(height: 24),
         ],
-        const SizedBox(height: 16),
-        _buildActionButtons(),
-        const SizedBox(height: 24),
-      ],
+      ),
+    );
+  }
+
+  Widget _buildCopyCnpjButton() {
+    final theme = context.theme;
+    final cardColor = theme.cardColor;
+    final borderColor = theme.dividerColor;
+    final textPrimary = theme.textTheme.bodyLarge?.color ?? const Color(0xFFE2E8F0);
+    final primaryBlue = theme.primaryColor;
+
+    final cnpj = _cnpjFormat(_result?.estabelecimento?.cnpj);
+
+    return Container(
+      decoration: BoxDecoration(
+        color: cardColor,
+        border: Border.all(color: borderColor),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(12),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: _copyCnpj,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: Row(
+              children: [
+                Icon(Icons.copy, size: 18, color: primaryBlue),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'CNPJ',
+                        style: TextStyle(
+                          color: theme.textTheme.bodySmall?.color ?? const Color(0xFF94A3B8),
+                          fontSize: 11,
+                        ),
+                      ),
+                      Text(
+                        cnpj,
+                        style: TextStyle(
+                          color: textPrimary,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(Icons.content_copy, size: 16, color: theme.textTheme.bodySmall?.color ?? const Color(0xFF94A3B8)),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
 
   Widget _dataCard(IconData icon, String title, List<Widget> children) {
+    final theme = context.theme;
+    final cardColor = theme.cardColor;
+    final borderColor = theme.dividerColor;
+    final primaryBlue = theme.primaryColor;
+
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFF161b22),
-        border: Border.all(color: const Color(0xFF30363d)),
+        color: cardColor,
+        border: Border.all(color: borderColor),
         borderRadius: BorderRadius.circular(16),
       ),
-      padding: const EdgeInsets.all(18),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Icon(icon, size: 16, color: const Color(0xFF58a6ff)),
-              const SizedBox(width: 8),
-              Text(
-                title.toUpperCase(),
-                style: const TextStyle(
-                  color: Color(0xFF58a6ff),
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 0.8,
-                ),
+          Container(
+            width: double.infinity,
+            decoration: BoxDecoration(
+              color: primaryBlue.withOpacity(0.08),
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(16),
+                topRight: Radius.circular(16),
               ),
-            ],
+              border: Border(
+                left: BorderSide(color: primaryBlue, width: 3),
+              ),
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            child: Row(
+              children: [
+                Icon(icon, size: 16, color: primaryBlue),
+                const SizedBox(width: 8),
+                Text(
+                  title.toUpperCase(),
+                  style: TextStyle(
+                    color: primaryBlue,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.8,
+                  ),
+                ),
+              ],
+            ),
           ),
-          const SizedBox(height: 14),
-          ...children,
+          Padding(
+            padding: const EdgeInsets.all(18),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: children,
+            ),
+          ),
         ],
       ),
     );
   }
 
   Widget _dataItem(String label, String? value, {Widget? trailing}) {
+    final theme = context.theme;
+    final textPrimary = theme.textTheme.bodyLarge?.color ?? const Color(0xFFE2E8F0);
+    final textSecondary = theme.textTheme.bodySmall?.color ?? const Color(0xFF94A3B8);
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 2),
       child: Row(
@@ -989,8 +1459,8 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
                 Text(
                   label,
-                  style: const TextStyle(
-                    color: Color(0xFF8b949e),
+                  style: TextStyle(
+                    color: textSecondary,
                     fontSize: 11,
                   ),
                 ),
@@ -1000,8 +1470,8 @@ class _HomeScreenState extends State<HomeScreen> {
                       value?.isNotEmpty == true ? value! : 'Não informado',
                       style: TextStyle(
                         color: value?.isNotEmpty == true
-                            ? const Color(0xFFe6edf3)
-                            : const Color(0xFF484f58),
+                            ? textPrimary
+                            : textSecondary.withOpacity(0.5),
                         fontSize: 13,
                         fontWeight:
                             value?.isNotEmpty == true ? FontWeight.w500 : FontWeight.w400,
@@ -1019,20 +1489,23 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _divider() {
+    final theme = context.theme;
+    final borderColor = theme.dividerColor;
+
     return Container(
       height: 1,
-      color: const Color(0xFF21262d),
+      color: borderColor.withOpacity(0.5),
       margin: const EdgeInsets.symmetric(vertical: 6),
     );
   }
 
   Color _statusColor(String? status) {
-    if (status == null) return const Color(0xFF8b949e);
+    if (status == null) return const Color(0xFF94A3B8);
     final s = status.toLowerCase();
-    if (s == 'ativo' || s == 'at') return const Color(0xFF3fb950);
-    if (s == 'suspenso' || s == 'sp') return const Color(0xFFd29922);
-    if (s == 'inapto' || s == 'in') return const Color(0xFFf85149);
-    return const Color(0xFF8b949e);
+    if (s == 'ativo' || s == 'at') return const Color(0xFF22C55E);
+    if (s == 'suspenso' || s == 'sp') return const Color(0xFFF59E0B);
+    if (s == 'inapto' || s == 'in') return const Color(0xFFEF4444);
+    return const Color(0xFF94A3B8);
   }
 
   String _statusText(String? status) {
@@ -1081,14 +1554,23 @@ class _HomeScreenState extends State<HomeScreen> {
     final status = est?.situacaoCadastral;
     final cor = _statusColor(status);
     final texto = _statusText(status);
+    final theme = context.theme;
+    final cardColor = theme.cardColor;
+    final textPrimary = theme.textTheme.bodyLarge?.color ?? const Color(0xFFE2E8F0);
+    final primaryBlue = theme.primaryColor;
+    final accentBlue = theme.colorScheme.secondary;
+
     return Container(
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF1f2937), Color(0xFF111827)],
+        gradient: LinearGradient(
+          colors: [
+            primaryBlue.withOpacity(0.15),
+            cardColor,
+          ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        border: Border.all(color: const Color(0xFF374151)),
+        border: Border.all(color: primaryBlue.withOpacity(0.3)),
         borderRadius: BorderRadius.circular(16),
       ),
       padding: const EdgeInsets.all(18),
@@ -1102,8 +1584,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 children: [
                   Text(
                     _result!.razaoSocial ?? 'Empresa Não Informada',
-                    style: const TextStyle(
-                      color: Color(0xFFe6edf3),
+                    style: TextStyle(
+                      color: textPrimary,
                       fontSize: 17,
                       fontWeight: FontWeight.w700,
                     ),
@@ -1111,8 +1593,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   const SizedBox(height: 4),
                   Text(
                     _cnpjFormat(est?.cnpj),
-                    style: const TextStyle(
-                      color: Color(0xFF58a6ff),
+                    style: TextStyle(
+                      color: accentBlue,
                       fontSize: 13,
                       fontWeight: FontWeight.w500,
                     ),
@@ -1145,172 +1627,201 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildInscricaoEstadualCard(
       List<InscricaoEstadualCompleta> inscricoes) {
+    final theme = context.theme;
+    final cardColor = theme.cardColor;
+    final borderColor = theme.dividerColor;
+    final textPrimary = theme.textTheme.bodyLarge?.color ?? const Color(0xFFE2E8F0);
+    final textSecondary = theme.textTheme.bodySmall?.color ?? const Color(0xFF94A3B8);
+    final primaryBlue = theme.primaryColor;
+
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFF161b22),
-        border: Border.all(color: const Color(0xFF30363d)),
+        color: cardColor,
+        border: Border.all(color: borderColor),
         borderRadius: BorderRadius.circular(16),
       ),
-      padding: const EdgeInsets.all(18),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              const Icon(Icons.article_outlined, size: 16, color: Color(0xFF58a6ff)),
-              const SizedBox(width: 8),
-              const Text(
-                'INSCRIÇÃO ESTADUAL',
-                style: TextStyle(
-                  color: Color(0xFF58a6ff),
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 0.8,
+          Container(
+            width: double.infinity,
+            decoration: BoxDecoration(
+              color: primaryBlue.withOpacity(0.08),
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(16),
+                topRight: Radius.circular(16),
+              ),
+              border: Border(
+                left: BorderSide(color: primaryBlue, width: 3),
+              ),
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            child: Row(
+              children: [
+                Icon(Icons.article_outlined, size: 16, color: primaryBlue),
+                const SizedBox(width: 8),
+                Text(
+                  'INSCRIÇÃO ESTADUAL',
+                  style: TextStyle(
+                    color: primaryBlue,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.8,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-          const SizedBox(height: 14),
-          ...inscricoes.map((ie) {
-            final ativo = ie.ativo == true;
-            final cor = ativo
-                ? const Color(0xFF3fb950)
-                : const Color(0xFFf85149);
-            final texto = ativo ? 'Ativo' : 'Inativo';
-            return Container(
-              margin: const EdgeInsets.only(bottom: 8),
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: const Color(0xFF21262d),
-                border: Border.all(color: const Color(0xFF30363d)),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          ie.inscricaoEstadual ?? "-",
-                          style: const TextStyle(
-                            color: Color(0xFFe6edf3),
-                            fontSize: 13,
-                            fontWeight: FontWeight.w500,
+          Padding(
+            padding: const EdgeInsets.all(18),
+            child: Column(
+              children: inscricoes.map((ie) {
+                final ativo = ie.ativo == true;
+                final cor = ativo
+                    ? const Color(0xFF22C55E)
+                    : const Color(0xFFEF4444);
+                final texto = ativo ? 'Ativo' : 'Inativo';
+                return Container(
+                  margin: const EdgeInsets.only(bottom: 8),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: borderColor.withOpacity(0.3),
+                    border: Border.all(color: borderColor),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              ie.inscricaoEstadual ?? "-",
+                              style: TextStyle(
+                                color: textPrimary,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            if (ie.estado?.sigla != null)
+                              Text(
+                                '${ie.estado!.nome} (${ie.estado!.sigla})',
+                                style: TextStyle(
+                                  color: textSecondary,
+                                  fontSize: 11,
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 5),
+                        decoration: BoxDecoration(
+                          color: cor.withAlpha(25),
+                          border: Border.all(color: cor.withAlpha(80)),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          texto.toUpperCase(),
+                          style: TextStyle(
+                            color: cor,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
                           ),
                         ),
-                        if (ie.estado?.sigla != null)
-                          Text(
-                            '${ie.estado!.nome} (${ie.estado!.sigla})',
-                            style: const TextStyle(
-                              color: Color(0xFF8b949e),
-                              fontSize: 11,
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 5),
-                    decoration: BoxDecoration(
-                      color: cor.withAlpha(25),
-                      border: Border.all(color: cor.withAlpha(80)),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      texto.toUpperCase(),
-                      style: TextStyle(
-                        color: cor,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
                       ),
-                    ),
+                    ],
                   ),
-                ],
-              ),
-            );
-          }),
+                );
+              }).toList(),
+            ),
+          ),
         ],
       ),
     );
   }
 
   Widget _buildActionButtons() {
+    final theme = context.theme;
+    final cardColor = theme.cardColor;
+    final borderColor = theme.dividerColor;
+    final textPrimary = theme.textTheme.bodyLarge?.color ?? const Color(0xFFE2E8F0);
+    final primaryBlue = theme.primaryColor;
+    final accentBlue = theme.colorScheme.secondary;
+
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFF161b22),
-        border: Border.all(color: const Color(0xFF30363d)),
+        color: cardColor,
+        border: Border.all(color: borderColor),
         borderRadius: BorderRadius.circular(16),
       ),
       padding: const EdgeInsets.all(14),
-      child: Row(
+      child: Column(
         children: [
-          Expanded(
-            child: SizedBox(
-              height: 40,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF238636),
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8)),
-                  elevation: 0,
-                  padding: EdgeInsets.zero,
-                ),
-                onPressed: _shareImage,
-                child: const Text('COMPARTILHAR',
-                    style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600)),
+          SizedBox(
+            width: double.infinity,
+            height: 48,
+            child: ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: primaryBlue,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+                elevation: 0,
               ),
+              onPressed: _shareImage,
+              icon: const Icon(Icons.share, size: 18),
+              label: const Text('COMPARTILHAR IMAGEM',
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
             ),
           ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: SizedBox(
-              height: 40,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF1f6feb),
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8)),
-                  elevation: 0,
-                  padding: EdgeInsets.zero,
-                ),
-                onPressed: _generatePdf,
-                child: const Text('GERAR PDF',
-                    style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600)),
+          const SizedBox(height: 10),
+          SizedBox(
+            width: double.infinity,
+            height: 48,
+            child: ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: accentBlue,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+                elevation: 0,
               ),
+              onPressed: _generatePdf,
+              icon: const Icon(Icons.picture_as_pdf, size: 18),
+              label: const Text('GERAR PDF',
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
             ),
           ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: SizedBox(
-              height: 40,
-              child: ElevatedButton.icon(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: _isFavorite
-                      ? const Color(0xFF21262d)
-                      : const Color(0xFF21262d),
-                  foregroundColor: _isFavorite
-                      ? const Color(0xFFd29922)
-                      : const Color(0xFFc9d1d9),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8)),
-                  side: const BorderSide(color: Color(0xFF30363d)),
-                  elevation: 0,
-                  padding: EdgeInsets.zero,
-                ),
-                icon: Icon(
-                  _isFavorite ? Icons.star : Icons.star_border,
-                  size: 14,
-                ),
-                label: Text(
-                  _isFavorite ? 'FAVORITADO' : 'FAVORITAR',
-                  style: const TextStyle(
-                      fontSize: 10, fontWeight: FontWeight.w600),
-                ),
-                onPressed: _toggleFavorite,
+          const SizedBox(height: 10),
+          SizedBox(
+            width: double.infinity,
+            height: 48,
+            child: ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: _isFavorite
+                    ? const Color(0xFFF59E0B).withOpacity(0.15)
+                    : cardColor,
+                foregroundColor: _isFavorite
+                    ? const Color(0xFFF59E0B)
+                    : textPrimary,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+                side: BorderSide(
+                    color: _isFavorite
+                        ? const Color(0xFFF59E0B).withOpacity(0.4)
+                        : borderColor),
+                elevation: 0,
+              ),
+              onPressed: _toggleFavorite,
+              icon: Icon(
+                _isFavorite ? Icons.star : Icons.star_border,
+                size: 18,
+              ),
+              label: Text(
+                _isFavorite ? 'FAVORITADO' : 'FAVORITAR',
+                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
               ),
             ),
           ),

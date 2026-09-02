@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:share_plus/share_plus.dart';
 import '../models/cnpj_response.dart';
 
@@ -7,13 +8,26 @@ class DetailScreen extends StatelessWidget {
 
   const DetailScreen({super.key, required this.data});
 
+  // Theme colors
+  static const Color bg = Color(0xFF0F1724);
+  static const Color card = Color(0xFF162033);
+  static const Color border = Color(0xFF1E3A5F);
+  static const Color primary = Color(0xFF1A4C89);
+  static const Color highlight = Color(0xFF2563EB);
+  static const Color textPrimary = Color(0xFFE2E8F0);
+  static const Color textSecondary = Color(0xFF94A3B8);
+  static const Color success = Color(0xFF22C55E);
+  static const Color warning = Color(0xFFF59E0B);
+  static const Color error = Color(0xFFEF4444);
+  static const Color textMuted = Color(0xFF4A5568);
+
   static Color _statusColor(String? status) {
-    if (status == null) return const Color(0xFF8b949e);
+    if (status == null) return textSecondary;
     final s = status.toLowerCase();
-    if (s == 'ativo' || s == 'at') return const Color(0xFF3fb950);
-    if (s == 'suspenso' || s == 'sp') return const Color(0xFFd29922);
-    if (s == 'inapto' || s == 'in') return const Color(0xFFf85149);
-    return const Color(0xFF8b949e);
+    if (s == 'ativo' || s == 'at') return success;
+    if (s == 'suspenso' || s == 'sp') return warning;
+    if (s == 'inapto' || s == 'in') return error;
+    return textSecondary;
   }
 
   static String _statusText(String? status) {
@@ -40,40 +54,63 @@ class DetailScreen extends StatelessWidget {
     return '($ddd) $n';
   }
 
+  void _copyToClipboard(BuildContext context, String text, String label) {
+    Clipboard.setData(ClipboardData(text: text));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('$label copiado!'),
+        backgroundColor: success,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final est = data.estabelecimento;
     final socios = data.socios;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0d1117),
+      backgroundColor: bg,
       appBar: AppBar(
         title: Text(
           data.razaoSocial ?? 'Detalhes',
-          style: const TextStyle(fontSize: 16),
+          style: const TextStyle(fontSize: 16, color: textPrimary),
         ),
-        backgroundColor: const Color(0xFF161b22),
-        foregroundColor: const Color(0xFFe6edf3),
+        backgroundColor: card,
+        foregroundColor: textPrimary,
         elevation: 0,
         bottom: const PreferredSize(
           preferredSize: Size.fromHeight(0),
-          child: Divider(height: 1, color: Color(0xFF30363d)),
+          child: Divider(height: 1, color: border),
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.share),
+            icon: const Icon(Icons.copy_rounded, size: 20),
+            tooltip: 'Copiar dados',
+            onPressed: () {
+              final text = _buildShareText();
+              _copyToClipboard(context, text, 'Dados');
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.share_rounded, size: 20),
+            tooltip: 'Compartilhar',
             onPressed: () {
               final text = _buildShareText();
               Share.share(text);
             },
           ),
+          const SizedBox(width: 4),
         ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            _buildHeader(),
+            _buildHeader(context),
             const SizedBox(height: 12),
             _buildSection('Dados da Empresa', [
               _row('Razão Social', data.razaoSocial),
@@ -109,8 +146,8 @@ class DetailScreen extends StatelessWidget {
                     child: Container(
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF21262d),
-                        border: Border.all(color: const Color(0xFF30363d)),
+                        color: const Color(0xFF1A2538),
+                        border: Border.all(color: border),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Column(
@@ -118,13 +155,13 @@ class DetailScreen extends StatelessWidget {
                         children: [
                           Text(s.nome ?? '-',
                               style: const TextStyle(
-                                  color: Color(0xFFe6edf3),
+                                  color: textPrimary,
                                   fontSize: 13,
                                   fontWeight: FontWeight.w500)),
                           if (s.qualificacaoSocio?.descricao != null)
                             Text(s.qualificacaoSocio!.descricao!,
                                 style: const TextStyle(
-                                    color: Color(0xFF8b949e), fontSize: 12)),
+                                    color: textSecondary, fontSize: 12)),
                         ],
                       ),
                     ),
@@ -136,15 +173,14 @@ class DetailScreen extends StatelessWidget {
               _buildSection('Inscrição Estadual',
                   est.inscricoesEstaduais!.map((ie) {
                 final ativo = ie.ativo == true;
-                final cor =
-                    ativo ? const Color(0xFF3fb950) : const Color(0xFFf85149);
+                final cor = ativo ? success : error;
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 6),
                   child: Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF21262d),
-                      border: Border.all(color: const Color(0xFF30363d)),
+                      color: const Color(0xFF1A2538),
+                      border: Border.all(color: border),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Row(
@@ -156,7 +192,7 @@ class DetailScreen extends StatelessWidget {
                               Text(
                                 ie.inscricaoEstadual ?? "-",
                                 style: const TextStyle(
-                                    color: Color(0xFFe6edf3),
+                                    color: textPrimary,
                                     fontSize: 13,
                                     fontWeight: FontWeight.w500),
                               ),
@@ -164,7 +200,7 @@ class DetailScreen extends StatelessWidget {
                                 Text(
                                   '${ie.estado!.nome} (${ie.estado!.sigla})',
                                   style: const TextStyle(
-                                      color: Color(0xFF8b949e), fontSize: 11),
+                                      color: textSecondary, fontSize: 11),
                                 ),
                             ],
                           ),
@@ -214,15 +250,16 @@ class DetailScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildHeader(BuildContext context) {
+    final cnpj = _cnpjFormat(data.estabelecimento?.cnpj);
     return Container(
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [Color(0xFF1f2937), Color(0xFF111827)],
+          colors: [Color(0xFF162033), Color(0xFF0F1724)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        border: Border.all(color: const Color(0xFF374151)),
+        border: Border.all(color: border),
         borderRadius: BorderRadius.circular(16),
       ),
       padding: const EdgeInsets.all(20),
@@ -231,20 +268,42 @@ class DetailScreen extends StatelessWidget {
           Text(
             data.razaoSocial ?? 'Empresa Não Informada',
             style: const TextStyle(
-              color: Color(0xFFe6edf3),
+              color: textPrimary,
               fontSize: 18,
               fontWeight: FontWeight.w700,
             ),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 6),
-          Text(
-            _cnpjFormat(data.estabelecimento?.cnpj),
-            style: const TextStyle(
-              color: Color(0xFF58a6ff),
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-            ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                cnpj,
+                style: const TextStyle(
+                  color: highlight,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(width: 8),
+              GestureDetector(
+                onTap: () => _copyToClipboard(context, cnpj, 'CNPJ'),
+                child: Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: highlight.withAlpha(30),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: const Icon(
+                    Icons.copy_rounded,
+                    size: 14,
+                    color: highlight,
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -254,37 +313,47 @@ class DetailScreen extends StatelessWidget {
   Widget _buildSection(String title, List<Widget> children) {
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFF161b22),
-        border: Border.all(color: const Color(0xFF30363d)),
+        color: card,
+        border: Border.all(color: border),
         borderRadius: BorderRadius.circular(16),
       ),
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Container(
-                width: 3,
-                height: 14,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF58a6ff),
-                  borderRadius: BorderRadius.circular(2),
-                ),
+          Container(
+            decoration: BoxDecoration(
+              color: highlight.withAlpha(15),
+              borderRadius: BorderRadius.circular(8),
+              border: Border(
+                left: BorderSide(color: highlight, width: 3),
               ),
-              const SizedBox(width: 8),
-              Text(
-                title,
-                style: const TextStyle(
-                  color: Color(0xFF58a6ff),
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 0.8,
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            margin: const EdgeInsets.only(bottom: 14),
+            child: Row(
+              children: [
+                Container(
+                  width: 3,
+                  height: 14,
+                  decoration: BoxDecoration(
+                    color: highlight,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
                 ),
-              ),
-            ],
+                const SizedBox(width: 8),
+                Text(
+                  title,
+                  style: const TextStyle(
+                    color: highlight,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.8,
+                  ),
+                ),
+              ],
+            ),
           ),
-          const SizedBox(height: 14),
           ...children,
         ],
       ),
@@ -302,7 +371,7 @@ class DetailScreen extends StatelessWidget {
             child: Text(
               label,
               style: const TextStyle(
-                color: Color(0xFF8b949e),
+                color: textSecondary,
                 fontSize: 12,
               ),
             ),
@@ -314,8 +383,8 @@ class DetailScreen extends StatelessWidget {
                   value?.isNotEmpty == true ? value! : 'Não informado',
                   style: TextStyle(
                     color: value?.isNotEmpty == true
-                        ? const Color(0xFFe6edf3)
-                        : const Color(0xFF484f58),
+                        ? textPrimary
+                        : textMuted,
                     fontSize: 13,
                     fontWeight: value?.isNotEmpty == true
                         ? FontWeight.w500
