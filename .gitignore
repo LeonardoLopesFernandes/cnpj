@@ -42,9 +42,6 @@ doc/api/
 # Secrets / local config
 .env
 .env.*
-*.keystore
-key.properties
-android/key.properties
 android/upload-keystore.jks
 ios/Runner/GoogleService-Info.plist
 android/app/google-services.json
