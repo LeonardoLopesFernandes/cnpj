@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:share_plus/share_plus.dart';
 import '../models/cnpj_response.dart';
+import '../share/relatorio_cnpj.dart';
 
 class DetailScreen extends StatelessWidget {
   final CnpjResponse data;
@@ -87,6 +88,16 @@ class DetailScreen extends StatelessWidget {
           child: Divider(height: 1, color: border),
         ),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.image_outlined, size: 20),
+            tooltip: 'Compartilhar imagem',
+            onPressed: () => compartilharImagemRelatorio(context, data),
+          ),
+          IconButton(
+            icon: const Icon(Icons.picture_as_pdf_outlined, size: 20),
+            tooltip: 'Compartilhar PDF',
+            onPressed: () => compartilharPdfRelatorio(context, data),
+          ),
           IconButton(
             icon: const Icon(Icons.copy_rounded, size: 20),
             tooltip: 'Copiar dados',
