@@ -15,12 +15,12 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
   List<Empresa> _favorites = [];
   bool _loading = true;
 
-  static const _primary = Color(0xFF1A4C89);
-  static const _surface = Color(0xFF0F1724);
-  static const _card = Color(0xFF162033);
-  static const _border = Color(0xFF1E3A5F);
-  static const _textPrimary = Color(0xFFE2E8F0);
-  static const _textSecondary = Color(0xFF94A3B8);
+  static const _primary = Color(0xFF0A6CFF);
+  static const _surface = Color(0xFFF4F6FA);
+  static const _card = Colors.white;
+  static const _border = Color(0xFFE2E8F0);
+  static const _textPrimary = Color(0xFF0B1B33);
+  static const _textSecondary = Color(0xFF64748B);
 
   @override
   void initState() {

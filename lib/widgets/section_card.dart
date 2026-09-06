@@ -13,8 +13,11 @@ class SectionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-      color: const Color(0xFF1F2937),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      color: Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: const BorderSide(color: Color(0xFFE2E8F0)),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -23,7 +26,7 @@ class SectionCard extends StatelessWidget {
             Text(
               title,
               style: const TextStyle(
-                color: Color(0xFF2563EB),
+                color: Color(0xFF0A6CFF),
                 fontSize: 13,
                 fontWeight: FontWeight.bold,
                 letterSpacing: 1.2,

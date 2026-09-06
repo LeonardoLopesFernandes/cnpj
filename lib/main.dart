@@ -22,7 +22,7 @@ class CnpjApp extends StatelessWidget {
     return MaterialApp(
       title: 'Consulta CNPJ',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.darkTheme,
+      theme: AppTheme.lightTheme,
       initialRoute: '/',
       routes: {
         '/': (context) => const SplashScreen(),
@@ -92,8 +92,14 @@ class _SplashScreenState extends State<SplashScreen>
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: Color(0xFF0F1724),
-                    border: Border.all(color: Color(0xFF1A4C89), width: 2),
+                    color: Colors.white,
+                    border: Border.all(color: Color(0xFF0A6CFF), width: 2),
+                    boxShadow: const [
+                      BoxShadow(
+                          color: Colors.black12,
+                          blurRadius: 16,
+                          offset: Offset(0, 4)),
+                    ],
                   ),
                   child: Image.asset(
                     'assets/icons/cnpj_logo.png',
@@ -107,7 +113,7 @@ class _SplashScreenState extends State<SplashScreen>
                   style: TextStyle(
                     fontSize: 28,
                     fontWeight: FontWeight.w700,
-                    color: Colors.white,
+                    color: Color(0xFF0B1B33),
                     letterSpacing: 1.2,
                   ),
                 ),

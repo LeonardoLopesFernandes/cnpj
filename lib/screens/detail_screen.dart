@@ -9,18 +9,19 @@ class DetailScreen extends StatelessWidget {
 
   const DetailScreen({super.key, required this.data});
 
-  // Theme colors
-  static const Color bg = Color(0xFF0F1724);
-  static const Color card = Color(0xFF162033);
-  static const Color border = Color(0xFF1E3A5F);
-  static const Color primary = Color(0xFF1A4C89);
-  static const Color highlight = Color(0xFF2563EB);
-  static const Color textPrimary = Color(0xFFE2E8F0);
-  static const Color textSecondary = Color(0xFF94A3B8);
-  static const Color success = Color(0xFF22C55E);
-  static const Color warning = Color(0xFFF59E0B);
-  static const Color error = Color(0xFFEF4444);
-  static const Color textMuted = Color(0xFF4A5568);
+  // Theme colors (cnpj.ws light)
+  static const Color bg = Color(0xFFF4F6FA);
+  static const Color card = Colors.white;
+  static const Color border = Color(0xFFE2E8F0);
+  static const Color primary = Color(0xFF0A6CFF);
+  static const Color highlight = Color(0xFF0A6CFF);
+  static const Color textPrimary = Color(0xFF0B1B33);
+  static const Color textSecondary = Color(0xFF64748B);
+  static const Color success = Color(0xFF16A34A);
+  static const Color warning = Color(0xFFD97706);
+  static const Color error = Color(0xFFDC2626);
+  static const Color textMuted = Color(0xFF94A3B8);
+  static const Color boxBg = Color(0xFFF1F5F9);
 
   static Color _statusColor(String? status) {
     if (status == null) return textSecondary;
@@ -154,13 +155,13 @@ class DetailScreen extends StatelessWidget {
               _buildSection('Sócios (${socios.length})',
                   socios.map((s) => Padding(
                     padding: const EdgeInsets.only(bottom: 6),
-                    child: Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF1A2538),
-                        border: Border.all(color: border),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
+                      child: Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: boxBg,
+                          border: Border.all(color: border),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -190,7 +191,7 @@ class DetailScreen extends StatelessWidget {
                   child: Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF1A2538),
+                      color: boxBg,
                       border: Border.all(color: border),
                       borderRadius: BorderRadius.circular(8),
                     ),
@@ -263,10 +264,23 @@ class DetailScreen extends StatelessWidget {
 
   Widget _buildHeader(BuildContext context) {
     final cnpj = _cnpjFormat(data.estabelecimento?.cnpj);
+    final est = data.estabelecimento;
+    final badges = <Widget>[
+      _badge(_statusText(est?.situacaoCadastral),
+          _statusColor(est?.situacaoCadastral)),
+      _badge(data.isSimples ? 'Simples' : 'Não Simples',
+          data.isSimples ? primary : textSecondary),
+      _badge(data.isMei ? 'MEI' : 'Não MEI',
+          data.isMei ? const Color(0xFF7C3AED) : textSecondary),
+      if (data.porte?.descricao != null)
+        _badge(data.porte!.descricao!, textSecondary),
+      if (est?.tipo != null && est!.tipo!.isNotEmpty)
+        _badge(est.tipo!, primary),
+    ];
     return Container(
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [Color(0xFF162033), Color(0xFF0F1724)],
+          colors: [Colors.white, Color(0xFFEFF4FB)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -304,7 +318,7 @@ class DetailScreen extends StatelessWidget {
                 child: Container(
                   padding: const EdgeInsets.all(4),
                   decoration: BoxDecoration(
-                    color: highlight.withAlpha(30),
+                    color: highlight.withAlpha(25),
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: const Icon(
@@ -316,7 +330,34 @@ class DetailScreen extends StatelessWidget {
               ),
             ],
           ),
+          const SizedBox(height: 12),
+          Wrap(
+            alignment: WrapAlignment.center,
+            spacing: 6,
+            runSpacing: 6,
+            children: badges,
+          ),
         ],
+      ),
+    );
+  }
+
+  Widget _badge(String texto, Color cor) {
+    if (texto.isEmpty) return const SizedBox.shrink();
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: cor.withAlpha(22),
+        border: Border.all(color: cor.withAlpha(110)),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(
+        texto.toUpperCase(),
+        style: TextStyle(
+          color: cor,
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+        ),
       ),
     );
   }

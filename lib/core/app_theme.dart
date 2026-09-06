@@ -3,42 +3,42 @@ import 'package:flutter/material.dart';
 class AppTheme {
   AppTheme._();
 
-  // ─── Brand Colors ───────────────────────────────────────
-  static const Color primary = Color(0xFF1A4C89);
-  static const Color accent = Color(0xFF2563EB);
-  static const Color surface = Color(0xFF0F1724);
-  static const Color card = Color(0xFF162033);
-  static const Color error = Color(0xFFEF4444);
-  static const Color success = Color(0xFF22C55E);
-  static const Color warning = Color(0xFFF59E0B);
-  static const Color textPrimary = Color(0xFFE2E8F0);
-  static const Color textSecondary = Color(0xFF94A3B8);
-  static const Color border = Color(0xFF1E3A5F);
+  // ─── Brand Colors (cnpj.ws) ───────────────────────────────
+  static const Color primary = Color(0xFF0A6CFF);
+  static const Color accent = Color(0xFF0A6CFF);
+  static const Color surface = Color(0xFFF4F6FA);
+  static const Color card = Colors.white;
+  static const Color error = Color(0xFFDC2626);
+  static const Color success = Color(0xFF16A34A);
+  static const Color warning = Color(0xFFD97706);
+  static const Color textPrimary = Color(0xFF0B1B33);
+  static const Color textSecondary = Color(0xFF64748B);
+  static const Color border = Color(0xFFE2E8F0);
 
   // ─── Material 3 Color Scheme ────────────────────────────
-  static const ColorScheme _colorScheme = ColorScheme.dark(
-    brightness: Brightness.dark,
+  static const ColorScheme _colorScheme = ColorScheme.light(
+    brightness: Brightness.light,
     primary: primary,
     onPrimary: Colors.white,
-    primaryContainer: Color(0xFF0D2E54),
-    onPrimaryContainer: Color(0xFFD1E4FF),
+    primaryContainer: Color(0xFFDCE9FF),
+    onPrimaryContainer: Color(0xFF0B1B33),
     secondary: accent,
     onSecondary: Colors.white,
-    secondaryContainer: Color(0xFF1A3A6B),
-    onSecondaryContainer: Color(0xFFD6E3FF),
+    secondaryContainer: Color(0xFFDCE9FF),
+    onSecondaryContainer: Color(0xFF0B1B33),
     surface: surface,
     onSurface: textPrimary,
     onSurfaceVariant: textSecondary,
     error: error,
     onError: Colors.white,
-    errorContainer: Color(0xFF5C1A1A),
-    onErrorContainer: Color(0xFFFFCDD2),
+    errorContainer: Color(0xFFFDE2E2),
+    onErrorContainer: Color(0xFF7F1D1D),
     outline: border,
-    outlineVariant: Color(0xFF2A4A6E),
+    outlineVariant: Color(0xFFCBD5E1),
     shadow: Colors.black,
     scrim: Colors.black,
-    inverseSurface: Color(0xFFE2E8F0),
-    inversePrimary: Color(0xFF4A90D9),
+    inverseSurface: Color(0xFF0B1B33),
+    inversePrimary: Color(0xFF7FB2FF),
   );
 
   // ─── Text Theme ─────────────────────────────────────────
@@ -137,7 +137,7 @@ class AppTheme {
 
   // ─── AppBar Theme ───────────────────────────────────────
   static const AppBarTheme _appBarTheme = AppBarTheme(
-    backgroundColor: surface,
+    backgroundColor: card,
     foregroundColor: textPrimary,
     elevation: 0,
     centerTitle: true,
@@ -152,8 +152,8 @@ class AppTheme {
   // ─── Card Theme ─────────────────────────────────────────
   static const CardThemeData _cardTheme = CardThemeData(
     color: card,
-    elevation: 2,
-    shadowColor: Colors.black54,
+    elevation: 1,
+    shadowColor: Colors.black12,
     margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
     shape: RoundedRectangleBorder(
       borderRadius: BorderRadius.all(Radius.circular(16)),
@@ -166,7 +166,7 @@ class AppTheme {
     style: ButtonStyle(
       backgroundColor: WidgetStatePropertyAll(accent),
       foregroundColor: WidgetStatePropertyAll(Colors.white),
-      elevation: WidgetStatePropertyAll(2),
+      elevation: WidgetStatePropertyAll(0),
       padding: WidgetStatePropertyAll(
         EdgeInsets.symmetric(horizontal: 24, vertical: 14),
       ),
@@ -259,7 +259,7 @@ class AppTheme {
   // ─── Bottom Navigation Bar Theme ────────────────────────
   static const BottomNavigationBarThemeData _bottomNavTheme =
       BottomNavigationBarThemeData(
-    backgroundColor: surface,
+    backgroundColor: card,
     selectedItemColor: accent,
     unselectedItemColor: textSecondary,
     type: BottomNavigationBarType.fixed,
@@ -285,10 +285,10 @@ class AppTheme {
   static const Color _scaffoldBackgroundColor = surface;
 
   // ─── Main ThemeData ─────────────────────────────────────
-  static ThemeData get darkTheme {
+  static ThemeData get lightTheme {
     return ThemeData(
       useMaterial3: true,
-      brightness: Brightness.dark,
+      brightness: Brightness.light,
       colorScheme: _colorScheme,
       scaffoldBackgroundColor: _scaffoldBackgroundColor,
       textTheme: _textTheme,
@@ -302,8 +302,8 @@ class AppTheme {
       dividerTheme: _dividerTheme,
       iconTheme: _iconTheme,
       snackBarTheme: SnackBarThemeData(
-        backgroundColor: card,
-        contentTextStyle: TextStyle(color: textPrimary, fontSize: 14),
+        backgroundColor: textPrimary,
+        contentTextStyle: TextStyle(color: Colors.white, fontSize: 14),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.all(Radius.circular(12)),
         ),
@@ -345,7 +345,7 @@ class AppTheme {
       floatingActionButtonTheme: FloatingActionButtonThemeData(
         backgroundColor: accent,
         foregroundColor: Colors.white,
-        elevation: 4,
+        elevation: 2,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.all(Radius.circular(16)),
         ),
@@ -368,15 +368,14 @@ class AppTheme {
         activeTrackColor: accent,
         inactiveTrackColor: border,
         thumbColor: accent,
-        overlayColor: accent.withAlpha(50),
+        overlayColor: accent.withAlpha(30),
       ),
       tooltipTheme: TooltipThemeData(
         decoration: BoxDecoration(
-          color: card,
+          color: textPrimary,
           borderRadius: BorderRadius.all(Radius.circular(8)),
-          border: Border.all(color: border),
         ),
-        textStyle: TextStyle(color: textPrimary, fontSize: 12),
+        textStyle: TextStyle(color: Colors.white, fontSize: 12),
       ),
     );
   }
