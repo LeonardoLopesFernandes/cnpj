@@ -1,7 +1,7 @@
 name: cnpj
 description: "Consulta CNPJ - Consulta de CNPJ gratuita"
 publish_to: 'none'
-version: 4.0.0+4
+version: 4.0.9+9
 
 environment:
   sdk: ^3.10.4
