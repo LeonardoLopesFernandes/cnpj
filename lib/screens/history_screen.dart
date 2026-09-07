@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../core/paleta.dart';
 import '../models/empresa.dart';
 import '../services/storage_service.dart';
 
@@ -15,12 +16,22 @@ class _HistoryScreenState extends State<HistoryScreen> {
   List<Empresa> _history = [];
   bool _loading = true;
 
-  static const _primary = Color(0xFF0A6CFF);
-  static const _surface = Color(0xFFF4F6FA);
-  static const _card = Colors.white;
-  static const _border = Color(0xFFE2E8F0);
-  static const _textPrimary = Color(0xFF0B1B33);
-  static const _textSecondary = Color(0xFF64748B);
+  late Color _primary;
+  late Color _surface;
+  late Color _card;
+  late Color _border;
+  late Color _textPrimary;
+  late Color _textSecondary;
+
+  void _carregarPaleta(BuildContext context) {
+    final p = PaletaTema.of(context);
+    _primary = p.primary;
+    _surface = p.bg;
+    _card = p.card;
+    _border = p.border;
+    _textPrimary = p.textPrimary;
+    _textSecondary = p.textSecondary;
+  }
 
   @override
   void initState() {
@@ -63,16 +74,16 @@ class _HistoryScreenState extends State<HistoryScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: _card,
-        title: const Text('Limpar Histórico',
+        title: Text('Limpar Histórico',
             style: TextStyle(color: _textPrimary)),
-        content: const Text(
+        content: Text(
           'Tem certeza que deseja limpar todo o histórico?',
           style: TextStyle(color: _textSecondary),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancelar', style: TextStyle(color: _textSecondary)),
+            child: Text('Cancelar', style: TextStyle(color: _textSecondary)),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
@@ -96,6 +107,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
   @override
   Widget build(BuildContext context) {
+    _carregarPaleta(context);
     return Scaffold(
       backgroundColor: _surface,
       appBar: AppBar(
@@ -103,7 +115,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text('Histórico',
+            Text('Histórico',
                 style: TextStyle(
                     fontWeight: FontWeight.w600, color: _textPrimary)),
             if (!_loading)
@@ -111,19 +123,19 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 _history.isEmpty
                     ? 'Nenhum item'
                     : '${_history.length} ${_history.length == 1 ? 'item' : 'itens'}',
-                style: const TextStyle(fontSize: 12, color: _textSecondary),
+                style: TextStyle(fontSize: 12, color: _textSecondary),
               ),
           ],
         ),
         backgroundColor: _surface,
         elevation: 0,
-        bottom: const PreferredSize(
+        bottom: PreferredSize(
           preferredSize: Size.fromHeight(1),
           child: Divider(height: 1, color: _border),
         ),
       ),
       body: _loading
-          ? const Center(
+          ? Center(
               child: CircularProgressIndicator(color: _primary))
           : Column(
               children: [
@@ -132,7 +144,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                       ? Center(
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
-                            children: const [
+                            children: [
                               Icon(Icons.history,
                                   size: 64, color: _border),
                               SizedBox(height: 16),
@@ -196,13 +208,13 @@ class _HistoryScreenState extends State<HistoryScreen> {
                                               maxLines: 2,
                                               overflow:
                                                   TextOverflow.ellipsis,
-                                              style: const TextStyle(
+                                              style: TextStyle(
                                                 color: _textPrimary,
                                                 fontWeight: FontWeight.w600,
                                                 fontSize: 14,
                                               ),
                                             ),
-                                            const SizedBox(height: 4),
+                                            SizedBox(height: 4),
                                             Text(
                                               _formatCnpj(empresa.cnpj),
                                               style: const TextStyle(
@@ -214,7 +226,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                                           ],
                                         ),
                                       ),
-                                      const Icon(Icons.chevron_right,
+                                      Icon(Icons.chevron_right,
                                           color: _textSecondary, size: 22),
                                     ],
                                   ),
@@ -230,7 +242,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     child: SizedBox(
                       width: double.infinity,
                       child: ElevatedButton.icon(
-                        icon: const Icon(Icons.delete_outline, size: 20),
+                        icon: Icon(Icons.delete_outline, size: 20),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: _card,
                           foregroundColor: const Color(0xFFF85149),
@@ -238,7 +250,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                               const EdgeInsets.symmetric(vertical: 14),
                           shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(10)),
-                          side: const BorderSide(color: _border),
+                          side: BorderSide(color: _border),
                           elevation: 0,
                         ),
                         onPressed: _confirmClear,

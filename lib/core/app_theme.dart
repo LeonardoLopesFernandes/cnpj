@@ -285,8 +285,7 @@ class AppTheme {
   static const Color _scaffoldBackgroundColor = surface;
 
   // ─── Main ThemeData ─────────────────────────────────────
-  static ThemeData get lightTheme {
-    return ThemeData(
+  static ThemeData get lightTheme {    return ThemeData(
       useMaterial3: true,
       brightness: Brightness.light,
       colorScheme: _colorScheme,
@@ -376,6 +375,138 @@ class AppTheme {
           borderRadius: BorderRadius.all(Radius.circular(8)),
         ),
         textStyle: TextStyle(color: Colors.white, fontSize: 12),
+      ),
+    );
+  }
+
+  // ─── Dark ThemeData (original) ────────────────────────────
+  static ThemeData get darkTheme {
+    const dPrimary = Color(0xFF1A4C89);
+    const dAccent = Color(0xFF2563EB);
+    const dSurface = Color(0xFF0F1724);
+    const dCard = Color(0xFF162033);
+    const dError = Color(0xFFEF4444);
+    const dTextPrimary = Color(0xFFE2E8F0);
+    const dTextSecondary = Color(0xFF94A3B8);
+    const dBorder = Color(0xFF1E3A5F);
+    return ThemeData(
+      useMaterial3: true,
+      brightness: Brightness.dark,
+      colorScheme: const ColorScheme.dark(
+        brightness: Brightness.dark,
+        primary: dPrimary,
+        onPrimary: Colors.white,
+        primaryContainer: Color(0xFF0D2E54),
+        onPrimaryContainer: Color(0xFFD1E4FF),
+        secondary: dAccent,
+        onSecondary: Colors.white,
+        secondaryContainer: Color(0xFF1A3A6B),
+        onSecondaryContainer: Color(0xFFD6E3FF),
+        surface: dSurface,
+        onSurface: dTextPrimary,
+        onSurfaceVariant: dTextSecondary,
+        error: dError,
+        onError: Colors.white,
+        errorContainer: Color(0xFF5C1A1A),
+        onErrorContainer: Color(0xFFFFCDD2),
+        outline: dBorder,
+        outlineVariant: Color(0xFF2A4A6E),
+        shadow: Colors.black,
+        scrim: Colors.black,
+        inverseSurface: Color(0xFFE2E8F0),
+        inversePrimary: Color(0xFF4A90D9),
+      ),
+      scaffoldBackgroundColor: dSurface,
+      appBarTheme: const AppBarTheme(
+        backgroundColor: dSurface,
+        foregroundColor: dTextPrimary,
+        elevation: 0,
+        centerTitle: true,
+        titleTextStyle: TextStyle(
+          color: dTextPrimary,
+          fontSize: 20,
+          fontWeight: FontWeight.w600,
+        ),
+        iconTheme: IconThemeData(color: dTextPrimary),
+      ),
+      cardTheme: const CardThemeData(
+        color: dCard,
+        elevation: 2,
+        shadowColor: Colors.black54,
+        margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.all(Radius.circular(16)),
+        ),
+      ),
+      elevatedButtonTheme: const ElevatedButtonThemeData(
+        style: ButtonStyle(
+          backgroundColor: WidgetStatePropertyAll(dAccent),
+          foregroundColor: WidgetStatePropertyAll(Colors.white),
+          elevation: WidgetStatePropertyAll(2),
+          padding: WidgetStatePropertyAll(
+            EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+          ),
+          shape: WidgetStatePropertyAll(
+            RoundedRectangleBorder(
+              borderRadius: BorderRadius.all(Radius.circular(12)),
+            ),
+          ),
+          textStyle: WidgetStatePropertyAll(
+            TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.5,
+            ),
+          ),
+        ),
+      ),
+      textTheme: const TextTheme(
+        bodyLarge: TextStyle(color: dTextPrimary, fontSize: 16),
+        bodyMedium: TextStyle(color: dTextPrimary, fontSize: 14),
+        bodySmall: TextStyle(color: dTextSecondary, fontSize: 12),
+        titleLarge: TextStyle(color: dTextPrimary, fontSize: 22),
+        titleMedium: TextStyle(color: dTextPrimary, fontSize: 16),
+        titleSmall: TextStyle(color: dTextPrimary, fontSize: 14),
+        labelLarge: TextStyle(color: dTextPrimary, fontSize: 14),
+        labelMedium: TextStyle(color: dTextSecondary, fontSize: 12),
+        labelSmall: TextStyle(color: dTextSecondary, fontSize: 11),
+      ),
+      inputDecorationTheme: const InputDecorationTheme(
+        filled: true,
+        fillColor: dCard,
+        hintStyle: TextStyle(color: dTextSecondary, fontSize: 14),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.all(Radius.circular(12)),
+          borderSide: BorderSide(color: dBorder, width: 1),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.all(Radius.circular(12)),
+          borderSide: BorderSide(color: dBorder, width: 1),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.all(Radius.circular(12)),
+          borderSide: BorderSide(color: dAccent, width: 2),
+        ),
+      ),
+      iconTheme: const IconThemeData(color: dTextPrimary, size: 24),
+      dividerTheme: const DividerThemeData(color: dBorder, thickness: 1),
+      snackBarTheme: SnackBarThemeData(
+        backgroundColor: dCard,
+        contentTextStyle:
+            const TextStyle(color: dTextPrimary, fontSize: 14),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        behavior: SnackBarBehavior.floating,
+      ),
+      dialogTheme: const DialogThemeData(
+        backgroundColor: dCard,
+        titleTextStyle: TextStyle(
+          color: dTextPrimary,
+          fontSize: 20,
+          fontWeight: FontWeight.w600,
+        ),
+        contentTextStyle: TextStyle(color: dTextSecondary, fontSize: 14),
       ),
     );
   }

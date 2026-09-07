@@ -3,33 +3,50 @@ import 'package:flutter/services.dart';
 import 'package:share_plus/share_plus.dart';
 import '../models/cnpj_response.dart';
 import '../share/relatorio_cnpj.dart';
+import '../core/paleta.dart';
 
 class DetailScreen extends StatelessWidget {
   final CnpjResponse data;
 
-  const DetailScreen({super.key, required this.data});
+  DetailScreen({super.key, required this.data});
 
-  // Theme colors (cnpj.ws light)
-  static const Color bg = Color(0xFFF4F6FA);
-  static const Color card = Colors.white;
-  static const Color border = Color(0xFFE2E8F0);
-  static const Color primary = Color(0xFF0A6CFF);
-  static const Color highlight = Color(0xFF0A6CFF);
-  static const Color textPrimary = Color(0xFF0B1B33);
-  static const Color textSecondary = Color(0xFF64748B);
-  static const Color success = Color(0xFF16A34A);
-  static const Color warning = Color(0xFFD97706);
-  static const Color error = Color(0xFFDC2626);
-  static const Color textMuted = Color(0xFF94A3B8);
-  static const Color boxBg = Color(0xFFF1F5F9);
+  // Cores seguem o tema ativo (claro/escuro)
+  late Color bg;
+  late Color card;
+  late Color border;
+  late Color primary;
+  late Color highlight;
+  late Color textPrimary;
+  late Color textSecondary;
+  late Color success;
+  late Color warning;
+  late Color error;
+  late Color textMuted;
+  late Color boxBg;
+
+  void _carregarPaleta(BuildContext context) {
+    final p = PaletaTema.of(context);
+    bg = p.bg;
+    card = p.card;
+    border = p.border;
+    primary = p.primary;
+    highlight = p.primary;
+    textPrimary = p.textPrimary;
+    textSecondary = p.textSecondary;
+    success = p.success;
+    warning = p.warning;
+    error = p.error;
+    textMuted = p.muted;
+    boxBg = p.box;
+  }
 
   static Color _statusColor(String? status) {
-    if (status == null) return textSecondary;
+    if (status == null) return const Color(0xFF94A3B8);
     final s = status.toLowerCase();
-    if (s == 'ativo' || s == 'at') return success;
-    if (s == 'suspenso' || s == 'sp') return warning;
-    if (s == 'inapto' || s == 'in') return error;
-    return textSecondary;
+    if (s == 'ativo' || s == 'at') return const Color(0xFF22C55E);
+    if (s == 'suspenso' || s == 'sp') return const Color(0xFFF59E0B);
+    if (s == 'inapto' || s == 'in') return const Color(0xFFEF4444);
+    return const Color(0xFF94A3B8);
   }
 
   static String _statusText(String? status) {
@@ -71,6 +88,7 @@ class DetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    _carregarPaleta(context);
     final est = data.estabelecimento;
     final socios = data.socios;
 
@@ -79,12 +97,12 @@ class DetailScreen extends StatelessWidget {
       appBar: AppBar(
         title: Text(
           data.razaoSocial ?? 'Detalhes',
-          style: const TextStyle(fontSize: 16, color: textPrimary),
+          style: TextStyle(fontSize: 16, color: textPrimary),
         ),
         backgroundColor: card,
         foregroundColor: textPrimary,
         elevation: 0,
-        bottom: const PreferredSize(
+        bottom: PreferredSize(
           preferredSize: Size.fromHeight(0),
           child: Divider(height: 1, color: border),
         ),
@@ -145,13 +163,13 @@ class DetailScreen extends StatelessWidget {
                   'Cidade/UF',
                   '${est?.cidade?.nome ?? ''}/${est?.estado?.sigla ?? ''}'),
             ]),
-            const SizedBox(height: 12),
+            SizedBox(height: 12),
             _buildSection('Contato', [
               _row('E-mail', est?.email),
               _row('Telefone', formatTelefone(est?.ddd1, est?.telefone1)),
             ]),
             if (socios != null && socios.isNotEmpty) ...[
-              const SizedBox(height: 12),
+              SizedBox(height: 12),
               _buildSection('Sócios (${socios.length})',
                   socios.map((s) => Padding(
                     padding: const EdgeInsets.only(bottom: 6),
@@ -166,13 +184,13 @@ class DetailScreen extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(s.nome ?? '-',
-                              style: const TextStyle(
+                              style: TextStyle(
                                   color: textPrimary,
                                   fontSize: 13,
                                   fontWeight: FontWeight.w500)),
                           if (s.qualificacaoSocio?.descricao != null)
                             Text(s.qualificacaoSocio!.descricao!,
-                                style: const TextStyle(
+                                style: TextStyle(
                                     color: textSecondary, fontSize: 12)),
                         ],
                       ),
@@ -181,7 +199,7 @@ class DetailScreen extends StatelessWidget {
             ],
             if (est?.inscricoesEstaduais != null &&
                 est!.inscricoesEstaduais!.isNotEmpty) ...[
-              const SizedBox(height: 12),
+              SizedBox(height: 12),
               _buildSection('Inscrição Estadual',
                   est.inscricoesEstaduais!.map((ie) {
                 final ativo = ie.ativo == true;
@@ -203,7 +221,7 @@ class DetailScreen extends StatelessWidget {
                             children: [
                               Text(
                                 ie.inscricaoEstadual ?? "-",
-                                style: const TextStyle(
+                                style: TextStyle(
                                     color: textPrimary,
                                     fontSize: 13,
                                     fontWeight: FontWeight.w500),
@@ -211,7 +229,7 @@ class DetailScreen extends StatelessWidget {
                               if (ie.estado?.sigla != null)
                                 Text(
                                   '${ie.estado!.nome} (${ie.estado!.sigla})',
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                       color: textSecondary, fontSize: 11),
                                 ),
                             ],
@@ -292,27 +310,27 @@ class DetailScreen extends StatelessWidget {
         children: [
           Text(
             data.razaoSocial ?? 'Empresa Não Informada',
-            style: const TextStyle(
+            style: TextStyle(
               color: textPrimary,
               fontSize: 18,
               fontWeight: FontWeight.w700,
             ),
             textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 6),
+          SizedBox(height: 6),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
                 cnpj,
-                style: const TextStyle(
+                style: TextStyle(
                   color: highlight,
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
                 ),
               ),
-              const SizedBox(width: 8),
+              SizedBox(width: 8),
               GestureDetector(
                 onTap: () => _copyToClipboard(context, cnpj, 'CNPJ'),
                 child: Container(
@@ -321,7 +339,7 @@ class DetailScreen extends StatelessWidget {
                     color: highlight.withAlpha(25),
                     borderRadius: BorderRadius.circular(6),
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.copy_rounded,
                     size: 14,
                     color: highlight,
@@ -330,7 +348,7 @@ class DetailScreen extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           Wrap(
             alignment: WrapAlignment.center,
             spacing: 6,
@@ -343,7 +361,7 @@ class DetailScreen extends StatelessWidget {
   }
 
   Widget _badge(String texto, Color cor) {
-    if (texto.isEmpty) return const SizedBox.shrink();
+    if (texto.isEmpty) return SizedBox.shrink();
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
@@ -393,10 +411,10 @@ class DetailScreen extends StatelessWidget {
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
-                const SizedBox(width: 8),
+                SizedBox(width: 8),
                 Text(
                   title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: highlight,
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
@@ -422,13 +440,13 @@ class DetailScreen extends StatelessWidget {
             width: 110,
             child: Text(
               label,
-              style: const TextStyle(
+              style: TextStyle(
                 color: textSecondary,
                 fontSize: 12,
               ),
             ),
           ),
-          const SizedBox(width: 8),
+          SizedBox(width: 8),
           Expanded(
             child: trailing ??
                 Text(
@@ -453,7 +471,7 @@ class DetailScreen extends StatelessWidget {
   }
 
   Widget _statusBadge(String? status) {
-    if (status == null) return const SizedBox.shrink();
+    if (status == null) return SizedBox.shrink();
     final s = status.toLowerCase();
     final isAtiva = s.contains('ativa');
     final cor = isAtiva ? success : error;

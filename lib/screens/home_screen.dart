@@ -9,6 +9,7 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:pdf/pdf.dart';
 import '../models/cnpj_response.dart';
 import '../models/empresa.dart';
+import '../core/theme_controller.dart';
 import '../services/cnpj_api_service.dart';
 import '../services/storage_service.dart';
 import 'detail_screen.dart';
@@ -914,6 +915,17 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             Navigator.pop(context);
             Share.share('Confira o aplicativo Consulta CNPJ!');
           }),
+          ValueListenableBuilder<ThemeMode>(
+            valueListenable: ThemeController.modo,
+            builder: (_, modo, __) => SwitchListTile(
+              secondary: Icon(Icons.dark_mode_outlined, color: textSecondary),
+              title: Text('Tema escuro',
+                  style: TextStyle(color: textPrimary, fontSize: 15)),
+              value: modo == ThemeMode.dark,
+              activeColor: primaryBlue,
+              onChanged: (v) => ThemeController.definirEscuro(v),
+            ),
+          ),
           const Spacer(),
           _drawerItem(Icons.exit_to_app, 'Sair', () async {
             Navigator.pop(context);

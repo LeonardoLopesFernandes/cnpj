@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'core/app_theme.dart';
+import 'core/theme_controller.dart';
 import 'screens/home_screen.dart';
 
-void main() {
+void main() async {
   WidgetsBinding widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
+  await ThemeController.carregar();
   FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
   SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
@@ -19,15 +21,20 @@ class CnpjApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Consulta CNPJ',
-      debugShowCheckedModeBanner: false,
-      theme: AppTheme.lightTheme,
-      initialRoute: '/',
-      routes: {
-        '/': (context) => const SplashScreen(),
-        '/home': (context) => const HomeScreen(),
-      },
+    return ValueListenableBuilder<ThemeMode>(
+      valueListenable: ThemeController.modo,
+      builder: (_, modo, __) => MaterialApp(
+        title: 'Consulta CNPJ',
+        debugShowCheckedModeBanner: false,
+        theme: AppTheme.lightTheme,
+        darkTheme: AppTheme.darkTheme,
+        themeMode: modo,
+        initialRoute: '/',
+        routes: {
+          '/': (context) => const SplashScreen(),
+          '/home': (context) => const HomeScreen(),
+        },
+      ),
     );
   }
 }
@@ -79,6 +86,7 @@ class _SplashScreenState extends State<SplashScreen>
 
   @override
   Widget build(BuildContext context) {
+    final claro = Theme.of(context).brightness == Brightness.light;
     return Scaffold(
       body: Center(
         child: FadeTransition(
@@ -92,8 +100,12 @@ class _SplashScreenState extends State<SplashScreen>
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: Colors.white,
-                    border: Border.all(color: Color(0xFF0A6CFF), width: 2),
+                    color: claro ? Colors.white : const Color(0xFF0F1724),
+                    border: Border.all(
+                        color: claro
+                            ? const Color(0xFF0A6CFF)
+                            : const Color(0xFF1A4C89),
+                        width: 2),
                     boxShadow: const [
                       BoxShadow(
                           color: Colors.black12,
